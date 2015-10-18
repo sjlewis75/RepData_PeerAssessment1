@@ -1,0 +1,80 @@
+---
+output: html_document
+---
+#Reproducible Research: Peer Assessment 1
+
+###Loading and preprocessing the data
+
+```{r load_data}
+stepsdata<-read.csv(file = "activity.csv")
+```
+
+###What is the total mean of steps taken per day? 
+
+```{r calculateSteps}
+sumSteps<-tapply(stepsdata$steps, stepsdata$date, sum, na.rm=TRUE)
+```
+
+```{r createHistogram}
+hist(sumSteps, main="Steps By Day", xlab="Number of Steps Per Day", col="red")
+```
+
+```{r calculateMean}
+stepmean<-mean(sumSteps)
+stepmedian<-median(sumSteps)
+```
+
+Mean: `r stepmean`  
+Median: `r stepmedian`  
+
+###What is the daily activity pattern?
+
+```{r computedailyactivity}
+library(ggplot2)
+stepsPerTime <- aggregate(x=list(steps=stepsdata$steps), by=list(interval=stepsdata$interval), FUN=mean, na.rm=TRUE)
+ggplot(stepsPerTime, aes(interval, steps)) + geom_line() + ylab("Average Number of Steps") +  xlab("Time Interval")
+```
+
+##It appears the 5 minute interval around 700 has the most number of steps.
+
+```{r numbermissingvalue}
+numNAs <- length(which(is.na(stepsdata$steps)))
+```
+Number of missing values : `r numNAs`
+
+
+```{r createimputeddataset}
+library(Hmisc)
+imputevaluesSteps <- stepsdata
+imputevaluesSteps$steps <- impute(stepsdata$steps, fun=mean)
+```
+
+```{r calculateStepsimputed}
+sumStepsimpute<-tapply(imputevaluesSteps$steps, imputevaluesSteps$date, sum, na.rm=TRUE)
+```
+
+```{r createHistogramimputed}
+hist(sumStepsimpute, main="Historgram of Steps By Day", xlab="Number of Steps Per Day(Imputed)", col="blue")
+```
+
+```{r calculateMeanimputed}
+stepmeanimpute<-mean(sumStepsimpute)
+stepmedianimpute<-median(sumStepsimpute)
+```
+
+###Mean(Imputed): `r stepmeanimpute`  
+###Median(Imputed): `r stepmedianimpute`  
+
+```{r calculateMeanimputedDay}
+imputevaluesSteps$dateType <-  ifelse(as.POSIXlt(imputevaluesSteps$date)$wday %in% c(0,6), 'weekend', 'weekday')
+````
+```{r cacluategglot}
+averagedActivityDataImputed <- aggregate(steps ~ interval + dateType, data=imputevaluesSteps, mean)
+```
+```{r doplot}
+ggplot(averagedActivityDataImputed, aes(interval, steps)) + 
+    geom_line() + 
+    facet_grid(dateType ~ .) +
+    xlab("5-minute interval") + 
+    ylab("avarage number of steps")
+```
